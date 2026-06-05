@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+type Person struct {
+	Name    string
+	Profile Profile
+}
+
+type Profile struct {
+	Age  int
+	City string
+}
+
 func TestWalk1(t *testing.T) {
 	expected := "Chris"
 	var got []string
@@ -30,11 +40,12 @@ func TestWalk(t *testing.T) {
 		ExpectedCalls []string
 	}{
 		{
-			"struct with one string field",
-			struct {
-				Name string
-			}{"Chris"},
-			[]string{"Chris"},
+			"slices",
+			[]Profile{
+				{33, "London"},
+				{34, "Reykjavík"},
+			},
+			[]string{"London", "Reykjavík"},
 		},
 	}
 
