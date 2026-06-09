@@ -39,7 +39,7 @@ func walk2(x interface{}, fn func(input string)) {
 	}
 }
 
-func walk(x interface{}, fn func(input string)) {
+func walk3(x interface{}, fn func(input string)) {
 	val := getValue(x)
 
 	numberOfValue := 0
@@ -57,7 +57,74 @@ func walk(x interface{}, fn func(input string)) {
 	}
 
 	for i := 0; i < numberOfValue; i++ {
-		walk(getField(i).Interface(), fn)
+		walk3(getField(i).Interface(), fn)
+	}
+}
+
+func walk4(x interface{}, fn func(input string)) {
+	val := getValue(x)
+
+	numberOfValue := 0
+	var getField func(int) reflect.Value
+
+	switch val.Kind() {
+	case reflect.String:
+		fn(val.String())
+	case reflect.Struct:
+		numberOfValue = val.NumField()
+		getField = val.Field
+	case reflect.Slice, reflect.Array:
+		numberOfValue = val.Len()
+		getField = val.Index
+	case reflect.Map:
+		for _, key := range val.MapKeys() {
+			walk4(val.MapIndex(key).Interface(), fn)
+		}
+	}
+
+	for i := 0; i < numberOfValue; i++ {
+		walk4(getField(i).Interface(), fn)
+	}
+}
+
+func walk(x interface{}, fn func(input string)) {
+	val := getValue(x)
+
+	walkValue := func(value reflect.Value) {
+		walk(value.Interface(), fn)
+	}
+
+	switch val.Kind() {
+	case reflect.String:
+		fn(val.String())
+	case reflect.Struct:
+		for i := 0; i < val.NumField(); i++ {
+			walkValue(val.Field(i))
+		}
+
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < val.Len(); i++ {
+			walkValue(val.Index(i))
+		}
+
+	case reflect.Map:
+		for _, key := range val.MapKeys() {
+			walkValue(val.MapIndex(key))
+		}
+
+	case reflect.Chan:
+		for {
+			if v, ok := val.Recv(); ok {
+				walkValue(v)
+			} else {
+				break
+			}
+		}
+	case reflect.Func:
+		valFnResult := val.Call(nil)
+		for _, res := range valFnResult {
+			walkValue(res)
+		}
 	}
 }
 
